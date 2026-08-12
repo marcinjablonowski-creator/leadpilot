@@ -1,0 +1,28 @@
+# Python virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment variables / secrets
+.env
+.env.*
+
+# Django
+*.log
+db.sqlite3
+staticfiles/
+
+# React / Node
+node_modules/
+frontend/dist/
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+Desktop.ini
