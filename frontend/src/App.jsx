@@ -7,6 +7,8 @@ import {
 
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
+import LeadDetails from "./pages/LeadDetails"
+
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("access_token")
@@ -17,6 +19,7 @@ function ProtectedRoute({ children }) {
 
   return children
 }
+
 
 function App() {
   return (
@@ -36,6 +39,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/leads/:id"
+          element={
+            <ProtectedRoute>
+              <LeadDetails />
             </ProtectedRoute>
           }
         />
