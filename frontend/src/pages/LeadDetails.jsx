@@ -133,17 +133,27 @@ function LeadDetails() {
 
   if (loading) {
     return (
-      <main>
-        <p>Ładowanie leada...</p>
+      <main className="page">
+        <div className="card">
+          <p>Ładowanie leada...</p>
+        </div>
       </main>
     )
   }
 
   if (error) {
     return (
-      <main>
-        <p>{error}</p>
-        <Link to="/dashboard">Wróć do Dashboardu</Link>
+      <main className="page">
+        <div className="card">
+          <p>{error}</p>
+
+          <Link
+            className="btn btn-secondary"
+            to="/dashboard"
+          >
+            Wróć do Dashboardu
+          </Link>
+        </div>
       </main>
     )
   }
@@ -153,83 +163,139 @@ function LeadDetails() {
   }
 
   return (
-    <main>
-      <p>
-        <Link to="/dashboard">
-          ← Wróć do Dashboardu
-        </Link>
-      </p>
-
-      <h2>
-        {lead.first_name} {lead.last_name}
-      </h2>
-
-      <section>
-        <h3>Dane klienta</h3>
-
-        <p>
-          <strong>E-mail:</strong>{" "}
-          {lead.email || "Brak"}
-        </p>
-
-        <p>
-          <strong>Telefon:</strong>{" "}
-          {lead.phone || "Brak"}
-        </p>
-      </section>
-
-      <section>
-        <h3>Zapytanie</h3>
-        <p>{lead.message}</p>
-      </section>
-
-      <section>
-        <h3>Status</h3>
-
-        <select
-          value={lead.status}
-          onChange={(e) => handleStatusChange(e.target.value)}
+    <main className="page">
+      <div className="actions">
+        <Link
+          className="btn btn-secondary"
+          to="/dashboard"
         >
-          <option value="new">New</option>
-          <option value="contacted">Contacted</option>
-          <option value="won">Won</option>
-          <option value="lost">Lost</option>
-        </select>
+          ← Wróć
+        </Link>
+      </div>
+
+      <div style={{ marginTop: "24px" }}>
+        <h2 className="page-title">
+          {lead.first_name} {lead.last_name}
+        </h2>
+
+        <p className="page-subtitle">
+          Szczegóły leada i analiza AI
+        </p>
+      </div>
+
+      <div className="grid grid-2">
+        <section className="card">
+          <h3>Dane klienta</h3>
+
+          <p>
+            <strong>E-mail:</strong>{" "}
+            {lead.email || "Brak"}
+          </p>
+
+          <p>
+            <strong>Telefon:</strong>{" "}
+            {lead.phone || "Brak"}
+          </p>
+
+          <div className="form-group" style={{ marginTop: "20px" }}>
+            <label htmlFor="status">Status</label>
+
+            <select
+              id="status"
+              value={lead.status}
+              onChange={(e) =>
+                handleStatusChange(e.target.value)
+              }
+            >
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+          </div>
+        </section>
+
+        <section className="card">
+          <h3>Zapytanie klienta</h3>
+
+          <div className="message">
+            {lead.message}
+          </div>
+        </section>
+      </div>
+
+      <section
+        className="ai-panel"
+        style={{ marginTop: "24px" }}
+      >
+        <div className="lead-card-top">
+          <div>
+            <h3>Analiza AI</h3>
+            <p className="muted">
+              Podsumowanie, priorytet i sugerowana odpowiedź.
+            </p>
+          </div>
+
+          <button
+            className="btn btn-primary"
+            onClick={handleAnalyze}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "Analizowanie..." : "Analizuj AI"}
+          </button>
+        </div>
+
+        <div style={{ marginTop: "20px" }}>
+          <p>
+            <strong>Priorytet:</strong>{" "}
+            {lead.ai_priority ? (
+              <span className={`priority-${lead.ai_priority}`}>
+                {lead.ai_priority.toUpperCase()}
+              </span>
+            ) : (
+              "Brak analizy"
+            )}
+          </p>
+
+          <div className="message">
+            <strong>Podsumowanie</strong>
+            <p>
+              {lead.ai_summary || "Brak analizy"}
+            </p>
+          </div>
+
+          <div className="message">
+            <strong>Proponowana odpowiedź</strong>
+            <p>
+              {lead.ai_reply || "Brak analizy"}
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section>
-        <h3>AI</h3>
+      {message && (
+        <div className="message">
+          {message}
+        </div>
+      )}
+
+      <section
+        className="card"
+        style={{ marginTop: "24px" }}
+      >
+        <h3>Usuń lead</h3>
+
+        <p className="muted">
+          Ta operacja jest nieodwracalna.
+        </p>
 
         <button
-          onClick={handleAnalyze}
-          disabled={aiLoading}
+          className="btn btn-danger"
+          onClick={handleDelete}
         >
-          {aiLoading ? "Analizowanie..." : "Analizuj AI"}
+          Usuń leada
         </button>
-
-        <p>
-          <strong>Priorytet:</strong>{" "}
-          {lead.ai_priority || "Brak analizy"}
-        </p>
-
-        <p>
-          <strong>Podsumowanie:</strong>{" "}
-          {lead.ai_summary || "Brak analizy"}
-        </p>
-
-        <p>
-          <strong>Proponowana odpowiedź:</strong>{" "}
-          {lead.ai_reply || "Brak analizy"}
-        </p>
       </section>
-
-      {message && <p>{message}</p>}
-
-      <hr />
-
-      <button onClick={handleDelete}>
-        Usuń leada
-      </button>
     </main>
   )
 }

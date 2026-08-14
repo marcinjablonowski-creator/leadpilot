@@ -1,8 +1,10 @@
 import {
   BrowserRouter,
   Navigate,
+  NavLink,
   Route,
   Routes,
+  useNavigate,
 } from "react-router-dom"
 
 import Login from "./pages/Login"
@@ -21,13 +23,52 @@ function ProtectedRoute({ children }) {
 }
 
 
+function AppLayout({ children }) {
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token")
+    localStorage.removeItem("refresh_token")
+    navigate("/login")
+  }
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div>
+          <h1 className="sidebar-logo">LeadPilot</h1>
+
+          <nav className="sidebar-nav">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
+            >
+              Dashboard
+            </NavLink>
+          </nav>
+        </div>
+
+        <button
+          className="btn btn-secondary"
+          onClick={handleLogout}
+        >
+          Wyloguj
+        </button>
+      </aside>
+
+      <div className="app-content">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+
 function App() {
   return (
     <BrowserRouter>
-      <header>
-        <h1>LeadPilot</h1>
-      </header>
-
       <Routes>
         <Route
           path="/login"
@@ -38,7 +79,9 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
@@ -47,7 +90,9 @@ function App() {
           path="/leads/:id"
           element={
             <ProtectedRoute>
-              <LeadDetails />
+              <AppLayout>
+                <LeadDetails />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
