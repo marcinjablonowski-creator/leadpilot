@@ -166,6 +166,14 @@ function LeadDetails() {
     }
   }
 
+  const handleEmail = () => {
+    if (!lead?.email) {
+      return
+    }
+
+    window.location.href = `mailto:${lead.email}`
+  }
+
   const handleDelete = async () => {
     const confirmed = window.confirm(
       "Czy na pewno chcesz usunąć tego leada?"
@@ -256,6 +264,27 @@ function LeadDetails() {
             <strong>Telefon:</strong>{" "}
             {lead.phone || "Brak"}
           </p>
+
+         <div className="actions">
+            {lead.phone && (
+              <a
+                className="btn btn-primary"
+                href={`tel:${lead.phone}`}
+              >
+                📞 Zadzwoń
+              </a>
+            )}
+
+            {lead.email && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleEmail}
+              >
+                ✉️ Napisz e-mail
+              </button>
+            )}
+          </div>
 
           <p>
             <strong>Dodano:</strong>{" "}
