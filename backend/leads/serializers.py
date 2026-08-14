@@ -17,6 +17,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "ai_summary",
             "ai_priority",
             "ai_reply",
+            "sales_notes",
             "created_at",
             "updated_at",
         ]

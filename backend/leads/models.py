@@ -31,6 +31,8 @@ class Lead(models.Model):
     ai_priority = models.CharField(max_length=20, blank=True)
     ai_reply = models.TextField(blank=True)
 
+    sales_notes = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
