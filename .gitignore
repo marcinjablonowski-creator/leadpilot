@@ -1,28 +1,59 @@
-# Python virtual environment
-.venv/
-
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
+*$py.class
 
-# Environment variables / secrets
+# Virtual environment
+.venv/
+venv/
+env/
+
+# =========================
+# Environment / secrets
+# =========================
 .env
 .env.*
+!.env.example
 
+# =========================
 # Django
+# =========================
 *.log
 db.sqlite3
+db.sqlite3-journal
 staticfiles/
+media/
 
-# React / Node
+# =========================
+# React / Node / Vite
+# =========================
 node_modules/
+frontend/node_modules/
 frontend/dist/
 frontend/build/
 
+# =========================
+# Testing / cache
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
 # IDE
+# =========================
 .vscode/
 .idea/
 
+# =========================
 # Windows
+# =========================
 Thumbs.db
 Desktop.ini
+
+# =========================
+# macOS
+# =========================
+.DS_Store
