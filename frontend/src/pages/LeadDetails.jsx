@@ -12,7 +12,11 @@ function LeadDetails() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
+
   const [aiLoading, setAiLoading] = useState(false)
+
+  const [salesNotes, setSalesNotes] = useState("")
+  const [notesSaving, setNotesSaving] = useState(false)
 
   const fetchLead = async () => {
     const token = localStorage.getItem("access_token")
@@ -28,6 +32,7 @@ function LeadDetails() {
       })
 
       setLead(response.data)
+      setSalesNotes(response.data.sales_notes || "")
     } catch (error) {
       console.error("Failed to fetch lead:", error)
 
@@ -74,7 +79,12 @@ function LeadDetails() {
       setMessage("Analiza AI zakończona.")
     } catch (error) {
       console.error("Failed to analyze lead:", error)
-      setMessage("Nie udało się przeanalizować leada.")
+
+      if (error.response?.status === 401) {
+        setMessage("Sesja wygasła. Zaloguj się ponownie.")
+      } else {
+        setMessage("Nie udało się przeanalizować leada.")
+      }
     } finally {
       setAiLoading(false)
     }
@@ -99,10 +109,60 @@ function LeadDetails() {
       )
 
       setLead(response.data)
+      setSalesNotes(response.data.sales_notes || "")
       setMessage("Status został zaktualizowany.")
     } catch (error) {
       console.error("Failed to update lead:", error)
       setMessage("Nie udało się zaktualizować statusu.")
+    }
+  }
+
+  const handleSaveNotes = async () => {
+    const token = localStorage.getItem("access_token")
+
+    try {
+      setNotesSaving(true)
+      setMessage("")
+
+      const response = await api.patch(
+        `/api/leads/${id}/`,
+        {
+          sales_notes: salesNotes,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      setLead(response.data)
+      setSalesNotes(response.data.sales_notes || "")
+      setMessage("Notatki zostały zapisane.")
+    } catch (error) {
+      console.error("Failed to save notes:", error)
+
+      if (error.response?.status === 401) {
+        setMessage("Sesja wygasła. Zaloguj się ponownie.")
+      } else {
+        setMessage("Nie udało się zapisać notatek.")
+      }
+    } finally {
+      setNotesSaving(false)
+    }
+  }
+
+  const handleCopyReply = async () => {
+    if (!lead?.ai_reply) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(lead.ai_reply)
+      setMessage("Odpowiedź AI została skopiowana.")
+    } catch (error) {
+      console.error("Failed to copy AI reply:", error)
+      setMessage("Nie udało się skopiować odpowiedzi.")
     }
   }
 
@@ -197,8 +257,20 @@ function LeadDetails() {
             {lead.phone || "Brak"}
           </p>
 
-          <div className="form-group" style={{ marginTop: "20px" }}>
-            <label htmlFor="status">Status</label>
+          <p>
+            <strong>Dodano:</strong>{" "}
+            {lead.created_at
+              ? new Date(lead.created_at).toLocaleString("pl-PL")
+              : "Brak daty"}
+          </p>
+
+          <div
+            className="form-group"
+            style={{ marginTop: "20px" }}
+          >
+            <label htmlFor="status">
+              Status
+            </label>
 
             <select
               id="status"
@@ -231,6 +303,7 @@ function LeadDetails() {
         <div className="lead-card-top">
           <div>
             <h3>Analiza AI</h3>
+
             <p className="muted">
               Podsumowanie, priorytet i sugerowana odpowiedź.
             </p>
@@ -241,7 +314,12 @@ function LeadDetails() {
             onClick={handleAnalyze}
             disabled={aiLoading}
           >
-            {aiLoading ? "Analizowanie..." : "Analizuj AI"}
+           
+           {aiLoading
+              ? "Analizowanie..."
+              : lead.ai_summary
+                ? "Analizuj ponownie"
+                : "Analizuj AI"}
           </button>
         </div>
 
@@ -249,7 +327,9 @@ function LeadDetails() {
           <p>
             <strong>Priorytet:</strong>{" "}
             {lead.ai_priority ? (
-              <span className={`priority-${lead.ai_priority}`}>
+              <span
+                className={`priority-${lead.ai_priority}`}
+              >
                 {lead.ai_priority.toUpperCase()}
               </span>
             ) : (
@@ -259,6 +339,7 @@ function LeadDetails() {
 
           <div className="message">
             <strong>Podsumowanie</strong>
+
             <p>
               {lead.ai_summary || "Brak analizy"}
             </p>
@@ -266,10 +347,52 @@ function LeadDetails() {
 
           <div className="message">
             <strong>Proponowana odpowiedź</strong>
+
             <p>
               {lead.ai_reply || "Brak analizy"}
             </p>
+
+            <button
+              className="btn btn-secondary"
+              onClick={handleCopyReply}
+              disabled={!lead.ai_reply}
+            >
+              Kopiuj odpowiedź AI
+            </button>
           </div>
+        </div>
+      </section>
+
+      <section
+        className="card"
+        style={{ marginTop: "24px" }}
+      >
+        <h3>Notatki handlowca</h3>
+
+        <p className="muted">
+          Notatkę możesz edytować w dowolnym momencie.
+        </p>
+
+        <div className="form-group">
+          <textarea
+            value={salesNotes}
+            onChange={(e) =>
+              setSalesNotes(e.target.value)
+            }
+            placeholder="Np. oddzwonić jutro o 10:00, klient oczekuje wyceny do piątku..."
+          />
+        </div>
+
+        <div className="actions">
+          <button
+            className="btn btn-primary"
+            onClick={handleSaveNotes}
+            disabled={notesSaving}
+          >
+            {notesSaving
+              ? "Zapisywanie..."
+              : "Zapisz notatki"}
+          </button>
         </div>
       </section>
 

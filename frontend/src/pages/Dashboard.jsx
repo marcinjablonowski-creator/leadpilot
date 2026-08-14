@@ -8,8 +8,11 @@ function Dashboard() {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+
   const [filter, setFilter] = useState("all")
+  const [search, setSearch] = useState("")
   const [showAddForm, setShowAddForm] = useState(false)
+  const [sortBy, setSortBy] = useState("newest")
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -17,6 +20,7 @@ function Dashboard() {
   const [phone, setPhone] = useState("")
   const [message, setMessage] = useState("")
   const [formMessage, setFormMessage] = useState("")
+  const [toast, setToast] = useState("")
 
   const fetchLeads = async () => {
     const token = localStorage.getItem("access_token")
@@ -106,16 +110,58 @@ function Dashboard() {
     (lead) => lead.status === "new"
   ).length
 
+  const contactCount = leads.filter(
+    (lead) => ["new", "contacted"].includes(lead.status)
+  ).length
+
   const filteredLeads = leads.filter((lead) => {
-    if (filter === "new") {
-      return lead.status === "new"
+    const matchesFilter =
+      filter === "all" ||
+      (filter === "new" && lead.status === "new") ||
+      (filter === "high" && lead.ai_priority === "high") ||
+      (
+        filter === "contact" &&
+        ["new", "contacted"].includes(lead.status)
+      )
+
+    const query = search.trim().toLowerCase()
+
+    if (!query) {
+      return matchesFilter
     }
 
-    if (filter === "high") {
-      return lead.ai_priority === "high"
+    const matchesSearch =
+      lead.first_name?.toLowerCase().includes(query) ||
+      lead.last_name?.toLowerCase().includes(query) ||
+      lead.email?.toLowerCase().includes(query) ||
+      lead.phone?.toLowerCase().includes(query)
+
+    return matchesFilter && matchesSearch
+  })
+
+  const sortedLeads = [...filteredLeads].sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.created_at) - new Date(a.created_at)
     }
 
-    return true
+    if (sortBy === "oldest") {
+      return new Date(a.created_at) - new Date(b.created_at)
+    }
+
+    if (sortBy === "priority") {
+      const priorityOrder = {
+        high: 3,
+        medium: 2,
+        low: 1,
+      }
+
+      return (
+        (priorityOrder[b.ai_priority] || 0) -
+        (priorityOrder[a.ai_priority] || 0)
+      )
+    }
+
+    return 0
   })
 
   const getStatusClass = (status) => {
@@ -130,13 +176,53 @@ function Dashboard() {
     return `priority-${priority}`
   }
 
+  const handleStatusChange = async (leadId, newStatus) => {
+    const token = localStorage.getItem("access_token")
+
+    try {
+      await api.patch(
+        `/api/leads/${leadId}/`,
+        {
+          status: newStatus,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      setLeads((currentLeads) =>
+        currentLeads.map((lead) =>
+          lead.id === leadId
+            ? { ...lead, status: newStatus }
+            : lead
+        )
+      )
+
+      setToast("Status został zmieniony.")
+      setTimeout(() => {
+        setToast("")
+      }, 2500)
+
+    } catch (error) {
+      console.error("Failed to update lead status:", error)
+      setError("Nie udało się zmienić statusu leada.")
+    }
+  }
+
   return (
     <main className="page">
+      {toast && (
+        <div className="toast">
+          {toast}
+        </div>
+      )}
       <div>
         <h2 className="page-title">Dashboard</h2>
 
         <p className="page-subtitle">
-          Zarządzaj leadami i sprawdzaj ich priorytet.
+          Zarządzaj leadami, wyszukuj klientów i sprawdzaj priorytet AI.
         </p>
       </div>
 
@@ -172,6 +258,17 @@ function Dashboard() {
         >
           <p className="muted">Priorytet HIGH</p>
           <h2>{highPriorityCount}</h2>
+        </button>
+
+        <button
+          type="button"
+          className={`card stat-card ${
+            filter === "contact" ? "stat-active" : ""
+          }`}
+          onClick={() => setFilter("contact")}
+        >
+          <p className="muted">Do kontaktu</p>
+          <h2>{contactCount}</h2>
         </button>
 
         <button
@@ -298,10 +395,46 @@ function Dashboard() {
 
             {!loading && !error && (
               <p className="muted">
-                Wyświetlono: {filteredLeads.length}
+                Wyświetlono: {sortedLeads.length}
               </p>
             )}
           </div>
+        </div>
+
+        <div
+          className="form-group"
+          style={{ marginBottom: "20px" }}
+        >
+          <label htmlFor="search">
+            Szukaj leada
+          </label>
+
+          <input
+            id="search"
+            type="search"
+            placeholder="Imię, nazwisko, e-mail lub telefon..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div
+          className="form-group"
+          style={{ marginBottom: "20px" }}
+        >
+          <label htmlFor="sortBy">
+            Sortuj
+          </label>
+
+          <select
+            id="sortBy"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="newest">Najnowsze</option>
+            <option value="oldest">Najstarsze</option>
+            <option value="priority">HIGH najpierw</option>
+          </select>
         </div>
 
         {loading && (
@@ -316,19 +449,19 @@ function Dashboard() {
           </div>
         )}
 
-        {!loading && !error && filteredLeads.length === 0 && (
+        {!loading && !error && sortedLeads.length === 0 && (
           <div className="card">
             <h3>Brak leadów</h3>
 
             <p className="muted">
-              Brak leadów pasujących do wybranego filtra.
+              Brak leadów pasujących do filtra lub wyszukiwania.
             </p>
           </div>
         )}
 
-        {!loading && !error && filteredLeads.length > 0 && (
+        {!loading && !error && sortedLeads.length > 0 && (
           <div className="lead-list">
-            {filteredLeads.map((lead) => (
+            {sortedLeads.map((lead) => (
               <article
                 className="lead-card"
                 key={lead.id}
@@ -344,12 +477,29 @@ function Dashboard() {
                       {" · "}
                       {lead.phone || "Brak telefonu"}
                     </p>
+
+                    <p className="muted">
+                      Dodano:{" "}
+                      {lead.created_at
+                        ? new Date(
+                            lead.created_at
+                          ).toLocaleString("pl-PL")
+                        : "Brak daty"}
+                    </p>
                   </div>
 
                   <div className="actions">
-                    <span className={getStatusClass(lead.status)}>
-                      {lead.status}
-                    </span>
+                    <select
+                      value={lead.status}
+                      onChange={(e) =>
+                        handleStatusChange(lead.id, e.target.value)
+                      }
+                    >
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="won">Won</option>
+                      <option value="lost">Lost</option>
+                    </select>
 
                     {lead.ai_priority && (
                       <span

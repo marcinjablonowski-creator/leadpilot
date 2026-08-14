@@ -20,7 +20,12 @@ class LeadListCreateView(generics.ListCreateAPIView):
         return Lead.objects.filter(user=self.request.user).order_by("-created_at")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        lead = serializer.save(user=self.request.user)
+
+        try:
+            analyze_and_save_lead(lead)
+        except (RuntimeError, ValueError):
+            pass
 
 
 class LeadDetailView(generics.RetrieveUpdateDestroyAPIView):
