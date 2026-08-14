@@ -12,6 +12,7 @@ function LeadDetails() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
+  const [aiLoading, setAiLoading] = useState(false)
 
   const fetchLead = async () => {
     const token = localStorage.getItem("access_token")
@@ -45,6 +46,39 @@ function LeadDetails() {
   useEffect(() => {
     fetchLead()
   }, [id])
+
+  const handleAnalyze = async () => {
+    const token = localStorage.getItem("access_token")
+
+    try {
+      setAiLoading(true)
+      setMessage("")
+
+      const response = await api.post(
+        `/api/leads/${id}/analyze/`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      setLead((currentLead) => ({
+        ...currentLead,
+        ai_summary: response.data.ai_summary,
+        ai_priority: response.data.ai_priority,
+        ai_reply: response.data.ai_reply,
+      }))
+
+      setMessage("Analiza AI zakończona.")
+    } catch (error) {
+      console.error("Failed to analyze lead:", error)
+      setMessage("Nie udało się przeanalizować leada.")
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const handleStatusChange = async (newStatus) => {
     const token = localStorage.getItem("access_token")
@@ -146,7 +180,6 @@ function LeadDetails() {
 
       <section>
         <h3>Zapytanie</h3>
-
         <p>{lead.message}</p>
       </section>
 
@@ -162,12 +195,17 @@ function LeadDetails() {
           <option value="won">Won</option>
           <option value="lost">Lost</option>
         </select>
-
-        {message && <p>{message}</p>}
       </section>
 
       <section>
         <h3>AI</h3>
+
+        <button
+          onClick={handleAnalyze}
+          disabled={aiLoading}
+        >
+          {aiLoading ? "Analizowanie..." : "Analizuj AI"}
+        </button>
 
         <p>
           <strong>Priorytet:</strong>{" "}
@@ -184,6 +222,8 @@ function LeadDetails() {
           {lead.ai_reply || "Brak analizy"}
         </p>
       </section>
+
+      {message && <p>{message}</p>}
 
       <hr />
 

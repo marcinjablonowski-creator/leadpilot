@@ -1,9 +1,10 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 
 from .models import Lead
 
@@ -33,6 +34,7 @@ class LeadModelTests(TestCase):
         self.assertEqual(lead.last_name, "Kowalski")
         self.assertEqual(lead.user, self.user)
         self.assertEqual(lead.status, Lead.Status.NEW)
+
 
 class LeadAPITests(APITestCase):
     def setUp(self):
@@ -71,9 +73,15 @@ class LeadAPITests(APITestCase):
     def test_get_leads(self):
         response = self.client.get("/api/leads/")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["id"], self.lead.id)
+        self.assertEqual(
+            response.data[0]["id"],
+            self.lead.id,
+        )
 
     def test_create_lead(self):
         data = {
@@ -90,23 +98,44 @@ class LeadAPITests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Lead.objects.count(), 3)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            Lead.objects.count(),
+            3,
+        )
 
         created_lead = Lead.objects.get(
             email="piotr@example.com"
         )
 
-        self.assertEqual(created_lead.user, self.user)
+        self.assertEqual(
+            created_lead.user,
+            self.user,
+        )
 
     def test_get_lead_detail(self):
         response = self.client.get(
             f"/api/leads/{self.lead.id}/"
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], self.lead.id)
-        self.assertEqual(response.data["first_name"], "Jan")
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["id"],
+            self.lead.id,
+        )
+
+        self.assertEqual(
+            response.data["first_name"],
+            "Jan",
+        )
 
     def test_update_lead(self):
         response = self.client.patch(
@@ -117,7 +146,10 @@ class LeadAPITests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
 
         self.lead.refresh_from_db()
 
@@ -137,13 +169,76 @@ class LeadAPITests(APITestCase):
         )
 
         self.assertFalse(
-            Lead.objects.filter(id=self.lead.id).exists()
+            Lead.objects.filter(
+                id=self.lead.id
+            ).exists()
+        )
+
+    @patch("leads.views.analyze_and_save_lead")
+    def test_analyze_lead_endpoint(self, mock_analyze):
+        def fake_analysis(lead):
+            lead.ai_summary = (
+                "Klient chce wycenę klimatyzacji."
+            )
+            lead.ai_priority = "high"
+            lead.ai_reply = (
+                "Dzień dobry, przygotujemy wycenę."
+            )
+
+            lead.save()
+
+        mock_analyze.side_effect = fake_analysis
+
+        response = self.client.post(
+            f"/api/leads/{self.lead.id}/analyze/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["ai_priority"],
+            "high",
+        )
+
+        self.assertEqual(
+            response.data["ai_summary"],
+            "Klient chce wycenę klimatyzacji.",
+        )
+
+        self.assertEqual(
+            response.data["ai_reply"],
+            "Dzień dobry, przygotujemy wycenę.",
+        )
+
+    @patch("leads.views.analyze_and_save_lead")
+    def test_analyze_lead_ai_error(self, mock_analyze):
+        mock_analyze.side_effect = RuntimeError(
+            "AI service is unavailable."
+        )
+
+        response = self.client.post(
+            f"/api/leads/{self.lead.id}/analyze/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+        self.assertEqual(
+            response.data["detail"],
+            "AI service is unavailable.",
         )
 
     def test_api_requires_authentication(self):
         self.client.force_authenticate(user=None)
 
-        response = self.client.get("/api/leads/")
+        response = self.client.get(
+            "/api/leads/"
+        )
 
         self.assertEqual(
             response.status_code,
@@ -163,7 +258,9 @@ class LeadAPITests(APITestCase):
     def test_user_cannot_update_another_users_lead(self):
         response = self.client.patch(
             f"/api/leads/{self.other_lead.id}/",
-            {"status": Lead.Status.CONTACTED},
+            {
+                "status": Lead.Status.CONTACTED,
+            },
             format="json",
         )
 
@@ -183,5 +280,7 @@ class LeadAPITests(APITestCase):
         )
 
         self.assertTrue(
-            Lead.objects.filter(id=self.other_lead.id).exists()
+            Lead.objects.filter(
+                id=self.other_lead.id
+            ).exists()
         )
