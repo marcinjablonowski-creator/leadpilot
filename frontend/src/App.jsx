@@ -10,6 +10,7 @@ import {
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import LeadDetails from "./pages/LeadDetails"
+import Contact from "./pages/Contact"
 
 
 function ProtectedRoute({ children }) {
@@ -99,7 +100,7 @@ function App() {
 
         <Route
           path="/"
-          element={<Navigate to="/dashboard" replace />}
+          element={<Contact />}
         />
       </Routes>
     </BrowserRouter>

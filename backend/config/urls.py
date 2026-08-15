@@ -18,10 +18,13 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
 
+from leads.views import PublicLeadCreateView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/leads/", include("leads.urls")),
+    path("api/public/leads/", PublicLeadCreateView.as_view(), name="public-lead-create"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh",
 ),
 ]

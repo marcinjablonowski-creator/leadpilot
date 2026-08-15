@@ -2,13 +2,15 @@ from unittest.mock import patch
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.test import APITestCase
+from kombu.exceptions import OperationalError
 
 from .models import Lead
+from .tasks import analyze_public_lead
 
 
 User = get_user_model()
@@ -332,3 +334,119 @@ class LeadAPITests(APITestCase):
                 id=self.other_lead.id
             ).exists()
         )
+
+
+@override_settings(PUBLIC_LEADS_OWNER_EMAIL="tester@leadpilot.pl")
+class PublicLeadAPITests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="public-owner",
+            email="tester@leadpilot.pl",
+            password="TestPassword123!",
+        )
+        self.data = {
+            "first_name": "Maria",
+            "last_name": "Nowak",
+            "email": "maria@example.com",
+            "phone": "500300200",
+            "message": "Potrzebuję oferty na klimatyzację do domu.",
+            "privacy_consent": True,
+            "website": "",
+        }
+
+    @patch("leads.views.analyze_public_lead.delay")
+    def test_public_form_creates_and_queues_lead(self, mock_delay):
+        response = self.client.post(
+            "/api/public/leads/",
+            self.data,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        lead = Lead.objects.get(email="maria@example.com")
+        self.assertEqual(lead.user, self.owner)
+        self.assertEqual(lead.status, Lead.Status.NEW)
+        mock_delay.assert_called_once_with(lead.pk)
+
+    @patch("leads.views.analyze_public_lead.delay")
+    def test_queue_failure_does_not_remove_public_lead(self, mock_delay):
+        mock_delay.side_effect = OperationalError("Queue unavailable")
+
+        response = self.client.post(
+            "/api/public/leads/",
+            self.data,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Lead.objects.filter(email="maria@example.com").exists())
+
+    def test_public_form_requires_contact_details(self):
+        self.data["email"] = ""
+        self.data["phone"] = ""
+
+        response = self.client.post(
+            "/api/public/leads/",
+            self.data,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Lead.objects.count(), 0)
+
+    def test_public_form_rejects_honeypot(self):
+        self.data["website"] = "https://spam.example"
+
+        response = self.client.post(
+            "/api/public/leads/",
+            self.data,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Lead.objects.count(), 0)
+
+    @override_settings(PUBLIC_LEADS_OWNER_EMAIL="missing@leadpilot.pl")
+    def test_public_form_is_unavailable_without_owner(self):
+        response = self.client.post(
+            "/api/public/leads/",
+            self.data,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        self.assertEqual(Lead.objects.count(), 0)
+
+
+class LeadAnalysisTaskTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="task-owner",
+            email="task-owner@example.com",
+            password="TestPassword123!",
+        )
+        self.lead = Lead.objects.create(
+            user=self.user,
+            first_name="Jan",
+            email="jan@example.com",
+            message="Proszę o ofertę na klimatyzację.",
+        )
+
+    @patch("leads.tasks.analyze_and_save_lead")
+    def test_task_analyzes_existing_lead(self, mock_analyze):
+        analyze_public_lead.run(self.lead.pk)
+
+        mock_analyze.assert_called_once_with(self.lead)
+
+    @patch("leads.tasks.analyze_and_save_lead")
+    def test_task_ignores_deleted_lead(self, mock_analyze):
+        missing_id = self.lead.pk
+        self.lead.delete()
+
+        analyze_public_lead.run(missing_id)
+
+        mock_analyze.assert_not_called()

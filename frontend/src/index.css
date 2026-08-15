@@ -493,6 +493,138 @@ textarea {
 
 
 /* =========================
+   PUBLIC CONTACT PAGE
+========================= */
+
+.landing-page {
+  min-height: 100vh;
+  padding: 0 32px 64px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.14), transparent 34%),
+    linear-gradient(145deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+.landing-header {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.landing-brand {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.landing-content {
+  width: min(1180px, 100%);
+  margin: 54px auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(520px, 1.1fr);
+  align-items: center;
+  gap: 72px;
+}
+
+.landing-intro h1 {
+  max-width: 580px;
+  margin: 10px 0 20px;
+  font-size: clamp(42px, 6vw, 68px);
+  line-height: 1.02;
+  letter-spacing: -2.5px;
+}
+
+.landing-intro > p:not(.landing-eyebrow) {
+  max-width: 540px;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.landing-eyebrow {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.landing-steps {
+  display: grid;
+  gap: 12px;
+  margin-top: 34px;
+  color: #334155;
+  font-weight: 650;
+}
+
+.contact-card {
+  padding: 34px;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.12);
+}
+
+.contact-submit {
+  width: 100%;
+  margin-top: 22px;
+}
+
+.checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.checkbox input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.form-error {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.contact-success {
+  padding: 46px 12px;
+  text-align: center;
+}
+
+.contact-success p {
+  margin: 0 auto 24px;
+  max-width: 420px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.success-mark {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+
+/* =========================
    RESPONSIVE
 ========================= */
 
@@ -503,6 +635,12 @@ textarea {
 
   .grid-2 {
     grid-template-columns: 1fr;
+  }
+
+  .landing-content {
+    margin-top: 28px;
+    grid-template-columns: 1fr;
+    gap: 36px;
   }
 }
 
@@ -543,6 +681,28 @@ textarea {
 
   .lead-card-top {
     flex-direction: column;
+  }
+
+  .landing-page {
+    padding: 0 16px 40px;
+  }
+
+  .landing-header {
+    padding: 18px 0;
+  }
+
+  .landing-header .btn {
+    padding: 9px 11px;
+    font-size: 13px;
+  }
+
+  .landing-intro h1 {
+    font-size: 42px;
+    letter-spacing: -1.5px;
+  }
+
+  .contact-card {
+    padding: 24px;
   }
 }
 

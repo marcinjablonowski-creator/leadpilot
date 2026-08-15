@@ -147,6 +147,29 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10/hour",
+    },
+}
+
+PUBLIC_LEADS_OWNER_EMAIL = os.environ.get(
+    "PUBLIC_LEADS_OWNER_EMAIL",
+    "tester@leadpilot.pl",
+)
+
+CELERY_BROKER_URL = os.environ.get(
+    "REDIS_URL",
+    "redis://localhost:6379/0",
+)
+CELERY_RESULT_BACKEND = os.environ.get(
+    "REDIS_URL",
+    "redis://localhost:6379/0",
+)
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_TASK_PUBLISH_RETRY = False
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "socket_connect_timeout": 1,
+    "socket_timeout": 2,
 }
 
 CORS_ALLOWED_ORIGINS = [
