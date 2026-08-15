@@ -13,6 +13,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "message",
+            "source",
             "status",
             "ai_summary",
             "ai_priority",
@@ -24,6 +25,7 @@ class LeadSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "source",
             "ai_summary",
             "ai_priority",
             "ai_reply",

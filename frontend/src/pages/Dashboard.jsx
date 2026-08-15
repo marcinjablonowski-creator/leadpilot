@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
 import api from "../api"
@@ -36,9 +36,8 @@ function Dashboard() {
   const [phone, setPhone] = useState("")
   const [message, setMessage] = useState("")
   const [formMessage, setFormMessage] = useState("")
-  const [toast, setToast] = useState("")
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     const token = localStorage.getItem("access_token")
 
     try {
@@ -63,11 +62,12 @@ function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetchLeads()
-  }, [])
+    const timer = setTimeout(() => fetchLeads(), 0)
+    return () => clearTimeout(timer)
+  }, [fetchLeads])
 
   const handleAddLead = async (e) => {
     e.preventDefault()
@@ -126,10 +126,6 @@ function Dashboard() {
     (lead) => lead.status === "new"
   ).length
 
-  const contactCount = leads.filter(
-    (lead) => ["new", "contacted"].includes(lead.status)
-  ).length
-
   const followUpsTodayCount = leads.filter(
     (lead) => isToday(lead.next_contact_at)
   ).length
@@ -185,10 +181,6 @@ function Dashboard() {
     return 0
   })
 
-  const getStatusClass = (status) => {
-    return `status status-${status}`
-  }
-
   const getPriorityClass = (priority) => {
     if (!priority) {
       return ""
@@ -197,48 +189,8 @@ function Dashboard() {
     return `priority-${priority}`
   }
 
-  const handleStatusChange = async (leadId, newStatus) => {
-    const token = localStorage.getItem("access_token")
-
-    try {
-      await api.patch(
-        `/api/leads/${leadId}/`,
-        {
-          status: newStatus,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      setLeads((currentLeads) =>
-        currentLeads.map((lead) =>
-          lead.id === leadId
-            ? { ...lead, status: newStatus }
-            : lead
-        )
-      )
-
-      setToast("Status został zmieniony.")
-      setTimeout(() => {
-        setToast("")
-      }, 2500)
-
-    } catch (error) {
-      console.error("Failed to update lead status:", error)
-      setError("Nie udało się zmienić statusu leada.")
-    }
-  }
-
   return (
     <main className="page">
-      {toast && (
-        <div className="toast">
-          {toast}
-        </div>
-      )}
       <div>
         <h2 className="page-title">Dashboard</h2>
 
@@ -248,17 +200,6 @@ function Dashboard() {
       </div>
 
       <section className="stats-grid">
-        <button
-          type="button"
-          className={`card stat-card ${
-            filter === "all" ? "stat-active" : ""
-          }`}
-          onClick={() => setFilter("all")}
-        >
-          <p className="muted">Wszystkie leady</p>
-          <h2>{leads.length}</h2>
-        </button>
-
         <button
           type="button"
           className={`card stat-card ${
@@ -284,17 +225,6 @@ function Dashboard() {
         <button
           type="button"
           className={`card stat-card ${
-            filter === "contact" ? "stat-active" : ""
-          }`}
-          onClick={() => setFilter("contact")}
-        >
-          <p className="muted">Do kontaktu</p>
-          <h2>{contactCount}</h2>
-        </button>
-
-        <button
-          type="button"
-          className={`card stat-card ${
             filter === "today" ? "stat-active" : ""
           }`}
           onClick={() => setFilter("today")}
@@ -303,20 +233,37 @@ function Dashboard() {
           <h2>{followUpsTodayCount}</h2>
         </button>
 
+      </section>
+
+      <div className="dashboard-toolbar">
+        <div className="filter-chips" aria-label="Filtry leadów">
+          <button
+            type="button"
+            className={`filter-chip ${filter === "all" ? "active" : ""}`}
+            onClick={() => setFilter("all")}
+          >
+            Wszystkie ({leads.length})
+          </button>
+          <button
+            type="button"
+            className={`filter-chip ${filter === "contact" ? "active" : ""}`}
+            onClick={() => setFilter("contact")}
+          >
+            Do kontaktu
+          </button>
+        </div>
+
         <button
           type="button"
-          className={`card stat-card ${
-            showAddForm ? "stat-active" : ""
-          }`}
+          className="btn btn-primary"
           onClick={() => {
             setShowAddForm((current) => !current)
             setFormMessage("")
           }}
         >
-          <p className="muted">Nowy lead</p>
-          <h2>+ Dodaj</h2>
+          + Dodaj lead
         </button>
-      </section>
+      </div>
 
       {showAddForm && (
         <section
@@ -433,40 +380,30 @@ function Dashboard() {
           </div>
         </div>
 
-        <div
-          className="form-group"
-          style={{ marginBottom: "20px" }}
-        >
-          <label htmlFor="search">
-            Szukaj leada
-          </label>
+        <div className="list-controls">
+          <div className="form-group">
+            <label htmlFor="search">Szukaj leada</label>
+            <input
+              id="search"
+              type="search"
+              placeholder="Imię, nazwisko, e-mail lub telefon..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-          <input
-            id="search"
-            type="search"
-            placeholder="Imię, nazwisko, e-mail lub telefon..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <div
-          className="form-group"
-          style={{ marginBottom: "20px" }}
-        >
-          <label htmlFor="sortBy">
-            Sortuj
-          </label>
-
-          <select
-            id="sortBy"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="newest">Najnowsze</option>
-            <option value="oldest">Najstarsze</option>
-            <option value="priority">HIGH najpierw</option>
-          </select>
+          <div className="form-group sort-control">
+            <label htmlFor="sortBy">Sortuj</label>
+            <select
+              id="sortBy"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="newest">Najnowsze</option>
+              <option value="oldest">Najstarsze</option>
+              <option value="priority">HIGH najpierw</option>
+            </select>
+          </div>
         </div>
 
         {loading && (
@@ -510,15 +447,6 @@ function Dashboard() {
                       {lead.phone || "Brak telefonu"}
                     </p>
 
-                    <p className="muted">
-                      Dodano:{" "}
-                      {lead.created_at
-                        ? new Date(
-                            lead.created_at
-                          ).toLocaleString("pl-PL")
-                        : "Brak daty"}
-                    </p>
-
                     {lead.next_contact_at && (
                       <p
                         className={
@@ -538,18 +466,15 @@ function Dashboard() {
                     )}
                   </div>
 
-                  <div className="actions">
-                    <select
-                      value={lead.status}
-                      onChange={(e) =>
-                        handleStatusChange(lead.id, e.target.value)
-                      }
-                    >
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="won">Won</option>
-                      <option value="lost">Lost</option>
-                    </select>
+                  <div className="lead-badges">
+                    <span className={`status status-${lead.status}`}>
+                      {{
+                        new: "Nowy",
+                        contacted: "Skontaktowano",
+                        won: "Wygrany",
+                        lost: "Przegrany",
+                      }[lead.status] || lead.status}
+                    </span>
 
                     {lead.ai_priority && (
                       <span
@@ -563,23 +488,23 @@ function Dashboard() {
                   </div>
                 </div>
 
-                <div className="message">
-                  {lead.message}
-                </div>
-
-                {lead.ai_summary && (
-                  <p>
-                    <strong>AI:</strong>{" "}
-                    {lead.ai_summary}
+                {lead.ai_summary ? (
+                  <p className="lead-summary">{lead.ai_summary}</p>
+                ) : (
+                  <p className="lead-summary">
+                    <strong>Zapytanie:</strong>{" "}
+                    {lead.message.length > 160
+                      ? `${lead.message.slice(0, 160)}…`
+                      : lead.message}
                   </p>
                 )}
 
                 <div className="actions">
                   <Link
-                    className="btn btn-secondary"
+                    className="btn btn-primary"
                     to={`/leads/${lead.id}`}
                   >
-                    Szczegóły →
+                    Otwórz lead →
                   </Link>
                 </div>
               </article>

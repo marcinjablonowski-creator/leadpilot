@@ -41,7 +41,10 @@ class PublicLeadCreateView(generics.CreateAPIView):
                 status=503,
             )
 
-        lead = serializer.save(user=owner)
+        lead = serializer.save(
+            user=owner,
+            source=Lead.Source.PUBLIC_FORM,
+        )
 
         try:
             analyze_public_lead.delay(lead.pk)

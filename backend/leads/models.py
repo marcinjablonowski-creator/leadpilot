@@ -3,6 +3,10 @@ from django.db import models
 
 
 class Lead(models.Model):
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        PUBLIC_FORM = "public_form", "Public form"
+
     class Status(models.TextChoices):
         NEW = "new", "New"
         CONTACTED = "contacted", "Contacted"
@@ -20,6 +24,11 @@ class Lead(models.Model):
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=30, blank=True)
     message = models.TextField()
+    source = models.CharField(
+        max_length=20,
+        choices=Source.choices,
+        default=Source.MANUAL,
+    )
 
     status = models.CharField(
         max_length=20,

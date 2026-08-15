@@ -38,6 +38,7 @@ class LeadModelTests(TestCase):
         self.assertEqual(lead.last_name, "Kowalski")
         self.assertEqual(lead.user, self.user)
         self.assertEqual(lead.status, Lead.Status.NEW)
+        self.assertEqual(lead.source, Lead.Source.MANUAL)
 
 
 class LeadAPITests(APITestCase):
@@ -367,6 +368,7 @@ class PublicLeadAPITests(APITestCase):
         lead = Lead.objects.get(email="maria@example.com")
         self.assertEqual(lead.user, self.owner)
         self.assertEqual(lead.status, Lead.Status.NEW)
+        self.assertEqual(lead.source, Lead.Source.PUBLIC_FORM)
         mock_delay.assert_called_once_with(lead.pk)
 
     @patch("leads.views.analyze_public_lead.delay")

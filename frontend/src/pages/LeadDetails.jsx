@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import api from "../api"
@@ -34,7 +34,7 @@ function LeadDetails() {
   const [nextContactAt, setNextContactAt] = useState("")
   const [followUpSaving, setFollowUpSaving] = useState(false)
 
-  const fetchLead = async () => {
+  const fetchLead = useCallback(async () => {
     const token = localStorage.getItem("access_token")
 
     try {
@@ -63,11 +63,21 @@ function LeadDetails() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
   useEffect(() => {
-    fetchLead()
-  }, [id])
+    const timer = setTimeout(() => fetchLead(), 0)
+    return () => clearTimeout(timer)
+  }, [fetchLead])
+
+  useEffect(() => {
+    if (!message) {
+      return undefined
+    }
+
+    const timer = setTimeout(() => setMessage(""), 3000)
+    return () => clearTimeout(timer)
+  }, [message])
 
   const handleAnalyze = async () => {
     const token = localStorage.getItem("access_token")
@@ -286,6 +296,12 @@ function LeadDetails() {
 
   return (
     <main className="page">
+      {message && (
+        <div className="toast" role="status">
+          {message}
+        </div>
+      )}
+
       <div className="actions">
         <Link
           className="btn btn-secondary"
@@ -362,10 +378,10 @@ function LeadDetails() {
                 handleStatusChange(e.target.value)
               }
             >
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="won">Won</option>
-              <option value="lost">Lost</option>
+              <option value="new">Nowy</option>
+              <option value="contacted">Skontaktowano</option>
+              <option value="won">Wygrany</option>
+              <option value="lost">Przegrany</option>
             </select>
           </div>
         </section>
@@ -406,42 +422,41 @@ function LeadDetails() {
           </button>
         </div>
 
-        <div style={{ marginTop: "20px" }}>
-          <p>
-            <strong>Priorytet:</strong>{" "}
-            {lead.ai_priority ? (
-              <span
-                className={`priority-${lead.ai_priority}`}
-              >
-                {lead.ai_priority.toUpperCase()}
-              </span>
-            ) : (
-              "Brak analizy"
-            )}
-          </p>
-
-          <div className="message">
-            <strong>Podsumowanie</strong>
-
-            <p>
-              {lead.ai_summary || "Brak analizy"}
-            </p>
+        <div className="ai-summary-row">
+          <div>
+            <span className="ai-label">Podsumowanie</span>
+            <p>{lead.ai_summary || "Brak analizy"}</p>
           </div>
 
-          <div className="message">
-            <strong>Proponowana odpowiedź</strong>
+          {lead.ai_priority && (
+            <span className={`priority-${lead.ai_priority}`}>
+              {lead.ai_priority.toUpperCase()}
+            </span>
+          )}
+        </div>
 
-            <p>
-              {lead.ai_reply || "Brak analizy"}
-            </p>
+        <div className="ai-reply">
+          <span className="ai-label">Proponowana odpowiedź</span>
+          <p>{lead.ai_reply || "Brak analizy"}</p>
 
+          <div className="actions">
             <button
-              className="btn btn-secondary"
+              className="btn btn-primary"
               onClick={handleCopyReply}
               disabled={!lead.ai_reply}
             >
-              Kopiuj odpowiedź AI
+              Kopiuj odpowiedź
             </button>
+
+            {lead.email && (
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={handleEmail}
+              >
+                Napisz e-mail
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -522,12 +537,6 @@ function LeadDetails() {
           </button>
         </div>
       </section>
-
-      {message && (
-        <div className="message">
-          {message}
-        </div>
-      )}
 
       <section
         className="card"
