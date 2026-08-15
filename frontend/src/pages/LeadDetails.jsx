@@ -109,6 +109,8 @@ function LeadDetails() {
 
       if (error.response?.status === 401) {
         setMessage("Sesja wygasła. Zaloguj się ponownie.")
+      } else if (error.response?.data?.detail) {
+        setMessage(error.response.data.detail)
       } else {
         setMessage("Nie udało się przeanalizować leada.")
       }

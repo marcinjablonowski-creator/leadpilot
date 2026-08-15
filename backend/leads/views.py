@@ -14,7 +14,11 @@ from rest_framework.response import Response
 
 from django.shortcuts import get_object_or_404
 
-from .ai_service import analyze_and_save_lead
+from .ai_service import (
+    AIResponseError,
+    AIServiceError,
+    analyze_and_save_lead,
+)
 
 
 User = get_user_model()
@@ -92,14 +96,26 @@ class LeadAnalyzeView(APIView):
 
         try:
             analyze_and_save_lead(lead)
+        except (AIServiceError, AIResponseError) as error:
+            return Response(
+                {"detail": error.detail, "code": error.code},
+                status=error.status_code,
+            )
+        # Safe fallbacks for unexpected errors from legacy integrations.
         except RuntimeError:
             return Response(
-                {"detail": "AI service is unavailable."},
+                {
+                    "detail": "Usługa AI jest chwilowo niedostępna.",
+                    "code": "ai_unavailable",
+                },
                 status=503,
             )
         except ValueError:
             return Response(
-                {"detail": "Invalid AI response."},
+                {
+                    "detail": "AI zwróciło nieprawidłową odpowiedź.",
+                    "code": "ai_invalid_response",
+                },
                 status=502,
             )
 

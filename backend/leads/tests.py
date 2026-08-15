@@ -14,7 +14,7 @@ from kombu.exceptions import OperationalError
 
 from .models import Lead
 from .tasks import analyze_public_lead
-from .ai_service import analyze_lead
+from .ai_service import AIServiceError, analyze_lead
 
 
 User = get_user_model()
@@ -270,8 +270,9 @@ class LeadAPITests(APITestCase):
 
     @patch("leads.views.analyze_and_save_lead")
     def test_analyze_lead_ai_error(self, mock_analyze):
-        mock_analyze.side_effect = RuntimeError(
-            "AI service is unavailable."
+        mock_analyze.side_effect = AIServiceError(
+            "ai_timeout",
+            "Usługa AI nie odpowiedziała na czas. Spróbuj ponownie.",
         )
 
         response = self.client.post(
@@ -285,8 +286,9 @@ class LeadAPITests(APITestCase):
 
         self.assertEqual(
             response.data["detail"],
-            "AI service is unavailable.",
+            "Usługa AI nie odpowiedziała na czas. Spróbuj ponownie.",
         )
+        self.assertEqual(response.data["code"], "ai_timeout")
 
     def test_protected_endpoints_require_authentication(self):
         self.client.force_authenticate(user=None)
