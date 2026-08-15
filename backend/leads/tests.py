@@ -452,3 +452,68 @@ class LeadAnalysisTaskTests(TestCase):
         analyze_public_lead.run(missing_id)
 
         mock_analyze.assert_not_called()
+
+
+@override_settings(PUBLIC_LEADS_OWNER_EMAIL="tester@leadpilot.pl")
+class PublicLeadWorkflowTests(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="workflow-owner",
+            email="tester@leadpilot.pl",
+            password="TestPassword123!",
+        )
+
+    @patch("leads.views.analyze_public_lead.delay")
+    @patch("leads.ai_service.analyze_lead")
+    def test_public_form_to_authenticated_dashboard_workflow(
+        self,
+        mock_analyze,
+        mock_delay,
+    ):
+        mock_analyze.return_value = {
+            "summary": "Klient prosi o ofertę klimatyzacji.",
+            "priority": "high",
+            "reply": "Dzień dobry, przygotujemy dopasowaną ofertę.",
+        }
+
+        form_response = self.client.post(
+            "/api/public/leads/",
+            {
+                "first_name": "Maria",
+                "last_name": "Nowak",
+                "email": "maria@example.com",
+                "phone": "",
+                "message": "Proszę o ofertę klimatyzacji do domu.",
+                "privacy_consent": True,
+                "website": "",
+            },
+            format="json",
+        )
+
+        self.assertEqual(form_response.status_code, status.HTTP_201_CREATED)
+        lead = Lead.objects.get(email="maria@example.com")
+        mock_delay.assert_called_once_with(lead.pk)
+
+        analyze_public_lead.run(lead.pk)
+
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {
+                "email": "tester@leadpilot.pl",
+                "password": "TestPassword123!",
+            },
+            format="json",
+        )
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}"
+        )
+
+        dashboard_response = self.client.get("/api/leads/")
+
+        self.assertEqual(dashboard_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(dashboard_response.data), 1)
+        self.assertEqual(
+            dashboard_response.data[0]["ai_summary"],
+            "Klient prosi o ofertę klimatyzacji.",
+        )
+        self.assertEqual(dashboard_response.data[0]["ai_priority"], "high")
