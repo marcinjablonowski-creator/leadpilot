@@ -714,6 +714,130 @@ textarea {
   font-weight: 800;
 }
 
+.landing-hero {
+  width: min(1180px, 100%);
+  margin: 64px auto 84px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.78fr);
+  align-items: center;
+  gap: 88px;
+}
+
+.landing-description {
+  margin: 0;
+}
+
+.landing-benefits {
+  margin: 32px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 13px;
+  list-style: none;
+  color: #1e293b;
+  font-weight: 650;
+}
+
+.landing-benefits li::before {
+  content: "✓";
+  margin-right: 10px;
+  color: #2563eb;
+}
+
+.contact-card {
+  padding: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.12);
+}
+
+.contact-heading {
+  margin-bottom: 26px;
+}
+
+.contact-heading h2 {
+  margin: 7px 0 0;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+}
+
+.contact-heading .landing-eyebrow {
+  margin: 0;
+}
+
+.contact-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.how-it-works {
+  margin: 0 -32px;
+  padding: 72px 32px 78px;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.section-heading,
+.process-grid {
+  width: min(1180px, 100%);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.section-heading {
+  text-align: center;
+}
+
+.section-heading h2 {
+  margin: 8px 0 0;
+  font-size: 34px;
+  letter-spacing: -0.8px;
+}
+
+.process-grid {
+  margin-top: 48px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 52px;
+}
+
+.process-grid article {
+  position: relative;
+  padding-top: 20px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.process-grid span {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.process-grid h3 {
+  margin: 13px 0 10px;
+  font-size: 19px;
+}
+
+.process-grid p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.landing-footer {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 34px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  color: #64748b;
+  font-size: 14px;
+}
+
 
 /* =========================
    RESPONSIVE
@@ -728,6 +852,16 @@ textarea {
     margin-top: 28px;
     grid-template-columns: 1fr;
     gap: 36px;
+  }
+
+  .landing-hero {
+    margin-top: 36px;
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+
+  .process-grid {
+    gap: 24px;
   }
 }
 
@@ -817,6 +951,26 @@ textarea {
 
   .contact-card {
     padding: 24px;
+  }
+
+  .landing-hero {
+    margin-bottom: 56px;
+  }
+
+  .how-it-works {
+    margin-right: -16px;
+    margin-left: -16px;
+    padding: 54px 16px 58px;
+  }
+
+  .process-grid {
+    margin-top: 36px;
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .landing-footer {
+    padding-top: 26px;
   }
 }
 
