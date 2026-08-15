@@ -4,6 +4,20 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import api from "../api"
 
 
+function toDateTimeLocal(value) {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(value)
+  const localDate = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60 * 1000
+  )
+
+  return localDate.toISOString().slice(0, 16)
+}
+
+
 function LeadDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -17,6 +31,8 @@ function LeadDetails() {
 
   const [salesNotes, setSalesNotes] = useState("")
   const [notesSaving, setNotesSaving] = useState(false)
+  const [nextContactAt, setNextContactAt] = useState("")
+  const [followUpSaving, setFollowUpSaving] = useState(false)
 
   const fetchLead = async () => {
     const token = localStorage.getItem("access_token")
@@ -33,6 +49,7 @@ function LeadDetails() {
 
       setLead(response.data)
       setSalesNotes(response.data.sales_notes || "")
+      setNextContactAt(toDateTimeLocal(response.data.next_contact_at))
     } catch (error) {
       console.error("Failed to fetch lead:", error)
 
@@ -149,6 +166,43 @@ function LeadDetails() {
       }
     } finally {
       setNotesSaving(false)
+    }
+  }
+
+  const handleSaveFollowUp = async (nextValue) => {
+    const token = localStorage.getItem("access_token")
+
+    try {
+      setFollowUpSaving(true)
+      setMessage("")
+
+      const response = await api.patch(
+        `/api/leads/${id}/`,
+        {
+          next_contact_at: nextValue
+            ? new Date(nextValue).toISOString()
+            : null,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      setLead(response.data)
+      setSalesNotes(response.data.sales_notes || "")
+      setNextContactAt(toDateTimeLocal(response.data.next_contact_at))
+      setMessage(
+        nextValue
+          ? "Termin kolejnego kontaktu został zapisany."
+          : "Termin kolejnego kontaktu został usunięty."
+      )
+    } catch (error) {
+      console.error("Failed to save follow-up:", error)
+      setMessage("Nie udało się zapisać terminu kontaktu.")
+    } finally {
+      setFollowUpSaving(false)
     }
   }
 
@@ -389,6 +443,50 @@ function LeadDetails() {
               Kopiuj odpowiedź AI
             </button>
           </div>
+        </div>
+      </section>
+
+      <section
+        className="card"
+        style={{ marginTop: "24px" }}
+      >
+        <h3>Kolejny kontakt</h3>
+
+        <p className="muted">
+          Ustaw termin, w którym należy ponownie skontaktować się z klientem.
+        </p>
+
+        <div className="form-group">
+          <label htmlFor="nextContactAt">Data i godzina</label>
+
+          <input
+            id="nextContactAt"
+            type="datetime-local"
+            value={nextContactAt}
+            onChange={(event) => setNextContactAt(event.target.value)}
+          />
+        </div>
+
+        <div className="actions">
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={() => handleSaveFollowUp(nextContactAt)}
+            disabled={followUpSaving || !nextContactAt}
+          >
+            {followUpSaving ? "Zapisywanie..." : "Zapisz termin"}
+          </button>
+
+          {lead.next_contact_at && (
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => handleSaveFollowUp("")}
+              disabled={followUpSaving}
+            >
+              Usuń termin
+            </button>
+          )}
         </div>
       </section>
 

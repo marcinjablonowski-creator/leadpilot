@@ -4,6 +4,22 @@ import { Link } from "react-router-dom"
 import api from "../api"
 
 
+function isToday(value) {
+  if (!value) {
+    return false
+  }
+
+  const date = new Date(value)
+  const today = new Date()
+
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  )
+}
+
+
 function Dashboard() {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
@@ -114,11 +130,16 @@ function Dashboard() {
     (lead) => ["new", "contacted"].includes(lead.status)
   ).length
 
+  const followUpsTodayCount = leads.filter(
+    (lead) => isToday(lead.next_contact_at)
+  ).length
+
   const filteredLeads = leads.filter((lead) => {
     const matchesFilter =
       filter === "all" ||
       (filter === "new" && lead.status === "new") ||
       (filter === "high" && lead.ai_priority === "high") ||
+      (filter === "today" && isToday(lead.next_contact_at)) ||
       (
         filter === "contact" &&
         ["new", "contacted"].includes(lead.status)
@@ -269,6 +290,17 @@ function Dashboard() {
         >
           <p className="muted">Do kontaktu</p>
           <h2>{contactCount}</h2>
+        </button>
+
+        <button
+          type="button"
+          className={`card stat-card ${
+            filter === "today" ? "stat-active" : ""
+          }`}
+          onClick={() => setFilter("today")}
+        >
+          <p className="muted">Do kontaktu dzisiaj</p>
+          <h2>{followUpsTodayCount}</h2>
         </button>
 
         <button
@@ -486,6 +518,24 @@ function Dashboard() {
                           ).toLocaleString("pl-PL")
                         : "Brak daty"}
                     </p>
+
+                    {lead.next_contact_at && (
+                      <p
+                        className={
+                          new Date(lead.next_contact_at) < new Date()
+                            ? "follow-up follow-up-overdue"
+                            : "follow-up"
+                        }
+                      >
+                        <strong>Kolejny kontakt:</strong>{" "}
+                        {new Date(lead.next_contact_at).toLocaleString(
+                          "pl-PL"
+                        )}
+                        {new Date(lead.next_contact_at) < new Date()
+                          ? " — termin minął"
+                          : ""}
+                      </p>
+                    )}
                   </div>
 
                   <div className="actions">

@@ -1,7 +1,9 @@
 from unittest.mock import patch
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -157,6 +159,52 @@ class LeadAPITests(APITestCase):
             self.lead.status,
             Lead.Status.CONTACTED,
         )
+
+    def test_set_next_contact_at(self):
+        next_contact_at = timezone.now() + timedelta(days=1)
+
+        response = self.client.patch(
+            f"/api/leads/{self.lead.id}/",
+            {
+                "next_contact_at": next_contact_at.isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.lead.refresh_from_db()
+        self.assertEqual(self.lead.next_contact_at, next_contact_at)
+
+    def test_clear_next_contact_at(self):
+        self.lead.next_contact_at = timezone.now()
+        self.lead.save(update_fields=["next_contact_at"])
+
+        response = self.client.patch(
+            f"/api/leads/{self.lead.id}/",
+            {
+                "next_contact_at": None,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.lead.refresh_from_db()
+        self.assertIsNone(self.lead.next_contact_at)
+
+    def test_user_cannot_set_follow_up_for_another_users_lead(self):
+        response = self.client.patch(
+            f"/api/leads/{self.other_lead.id}/",
+            {
+                "next_contact_at": timezone.now().isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.other_lead.refresh_from_db()
+        self.assertIsNone(self.other_lead.next_contact_at)
 
     def test_delete_lead(self):
         response = self.client.delete(

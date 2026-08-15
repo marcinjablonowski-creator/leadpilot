@@ -364,6 +364,15 @@ textarea {
   line-height: 1.55;
 }
 
+.follow-up {
+  margin: 10px 0 0;
+  color: #1d4ed8;
+}
+
+.follow-up-overdue {
+  color: #b91c1c;
+}
+
 .actions {
   display: flex;
   align-items: center;
