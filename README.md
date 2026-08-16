@@ -30,3 +30,14 @@ docker compose down
 
 `docker compose down` zachowuje dane PostgreSQL. Aby świadomie usunąć także
 lokalną bazę, użyj `docker compose down --volumes`.
+
+## Railway
+
+Usługa API korzysta z `railway.toml`, który uruchamia migracje przed
+deploymentem i sprawdza endpoint `/health/`.
+
+Osobna usługa Celery powinna mieć ustawioną ścieżkę konfiguracji:
+
+```text
+/railway.worker.toml
+```

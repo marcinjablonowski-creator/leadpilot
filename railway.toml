@@ -1,0 +1,8 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+preDeployCommand = ["python manage.py migrate --noinput"]
+healthcheckPath = "/health/"
+healthcheckTimeout = 100
