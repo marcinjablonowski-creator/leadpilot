@@ -3,4 +3,4 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "celery -A config worker --loglevel=info"
+startCommand = "celery -A config worker --loglevel=info --concurrency=2 --max-tasks-per-child=100"

@@ -73,7 +73,9 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:5173
       CSRF_TRUSTED_ORIGINS: http://localhost:5173
       SECURE_SSL_REDIRECT: "False"
-    command: celery -A config worker --loglevel=info
+    command: >-
+      celery -A config worker --loglevel=info
+      --concurrency=2 --max-tasks-per-child=100
     depends_on:
       api:
         condition: service_healthy
