@@ -63,6 +63,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,11 +96,20 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_SSL_REQUIRE = os.environ.get(
+    "DATABASE_SSL_REQUIRE",
+    "True",
+).lower() in {"1", "true", "yes"}
+
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ["DATABASE_URL"],
+    "default": dj_database_url.parse(
+        DATABASE_URL,
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=(
+            DATABASE_SSL_REQUIRE
+            and not DATABASE_URL.lower().startswith("sqlite")
+        ),
     )
 }
 
@@ -138,22 +148,30 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
 
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': os.environ.get(
-            "EMAIL_BACKEND",
-            "django.core.mail.backends.smtp.EmailBackend"
-            if not DEBUG
-            else "django.core.mail.backends.console.EmailBackend",
-        ),
-    },
-}
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend"
+    if not DEBUG
+    else "django.core.mail.backends.console.EmailBackend",
+)
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -212,8 +230,14 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SECURE_HSTS_SECONDS = int(
     os.environ.get("SECURE_HSTS_SECONDS", "3600" if not DEBUG else "0")
 )
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-SECURE_HSTS_PRELOAD = False
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS",
+    "False",
+).lower() in {"1", "true", "yes"}
+SECURE_HSTS_PRELOAD = os.environ.get(
+    "SECURE_HSTS_PRELOAD",
+    "False",
+).lower() in {"1", "true", "yes"}
 SECURE_SSL_REDIRECT = os.environ.get(
     "SECURE_SSL_REDIRECT",
     "False",
